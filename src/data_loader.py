@@ -3,16 +3,19 @@ from collections import Counter, deque
 import numpy as np
 
 class TextStreamer:
-    def __init__(self, file_path):
+    def __init__(self, file_path, limit_lines=None):
         self.file_path = file_path
+        self.limit_lines = limit_lines
 
     def __iter__(self):
         with open(self.file_path, 'r', encoding='utf-8') as file:
-            for line in file:
+            for line_number, line in enumerate(file):
+                if self.limit_lines is not None and line_number >= self.limit_lines:
+                    break
+                    
                 tokens = re.findall(r'[a-z]+', line.lower())
                 for token in tokens:
                     yield token
-
 class Vocabulary:
     def __init__(self, min_count=5, subsampling_t=1e-5):
         self.min_count = min_count
@@ -65,20 +68,21 @@ class DataLoader:
         self.table_size = int(1e6)
         self.unigram_table = self._build_unigram_table()
 
+        
     def _build_unigram_table(self):
-    
-
         table = np.zeros(self.table_size, dtype=np.int32)
         
+        word_ids = np.array(list(self.vocab.word_counts.keys()))
         pow_freq = np.array(list(self.vocab.word_counts.values())) ** 0.75
-        total_pow = np.sum(pow_freq)
         
+        total_pow = np.sum(pow_freq)
         probs = pow_freq / total_pow
         
         idx = 0
         cumulative_prob = probs[0]
+        
         for i in range(self.table_size):
-            table[i] = list(self.vocab.word_counts.keys())[idx]
+            table[i] = word_ids[idx] 
             if i / self.table_size > cumulative_prob:
                 idx += 1
                 if idx >= len(probs):
@@ -88,12 +92,7 @@ class DataLoader:
         return table
 
     def __iter__(self):
-        """
-        Główny generator okien przesuwanych i paczek.
-        Zwraca: (centers, contexts, negatives) jako gotowe tablice NumPy.
-        """
-        # Kolejka dwukierunkowa o sztywnym rozmiarze. 
-        # Automatycznie wypycha stare elementy z lewej strony przy dodawaniu z prawej.
+
         span = 2 * self.window_size + 1
         buffer = deque(maxlen=span)
         
@@ -102,46 +101,39 @@ class DataLoader:
         negatives = []
         
         for token in self.stream:
-            # 1. Odpytanie słownika - przejście na warstwę numeryczną
+
             if token not in self.vocab.word2id:
                 continue
             word_id = self.vocab.word2id[token]
             
-            # 2. Subsampling (Rzut stochastyczną kostką)
             p_discard = self.vocab.discard_probs.get(word_id, 0.0)
             if np.random.rand() < p_discard:
-                continue # Słowo usunięte z okna kontekstowego
+                continue
                 
             buffer.append(word_id)
             
-            # Jeśli bufor nie jest pełny, pobieraj dalej
             if len(buffer) < span:
                 continue
                 
-            # 3. Wyciągnięcie słowa centralnego (środek bufora) i kontekstu
             center_word = buffer[self.window_size]
             context_words = [buffer[i] for i in range(span) if i != self.window_size]
             
-            # 4. Generowanie paczek dla każdej pary (center, context)
+
             for context_word in context_words:
                 centers.append(center_word)
                 contexts.append(context_word)
                 
-                # Błyskawiczne losowanie N negatywnych przykładów z unigram table
                 neg_indices = np.random.randint(0, self.table_size, size=self.neg_samples)
                 negatives.append(self.unigram_table[neg_indices])
                 
-                # Kiedy paczka osiągnie zadany rozmiar, wyślij ją do optymalizatora
                 if len(centers) == self.batch_size:
                     yield (
                         np.array(centers, dtype=np.int32), 
                         np.array(contexts, dtype=np.int32), 
                         np.array(negatives, dtype=np.int32)
                     )
-                    # Reset lokalnych buforów paczki
                     centers, contexts, negatives = [], [], []
 
-        # Obsługa resztki danych, która nie wypełniła ostatniego batcha
         if len(centers) > 0:
             yield (
                 np.array(centers, dtype=np.int32), 
