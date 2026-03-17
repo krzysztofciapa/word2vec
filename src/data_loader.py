@@ -68,7 +68,7 @@ class DataLoader:
         self.table_size = int(1e6)
         self.unigram_table = self._build_unigram_table()
 
-        
+
     def _build_unigram_table(self):
         table = np.zeros(self.table_size, dtype=np.int32)
         
@@ -92,6 +92,57 @@ class DataLoader:
         return table
 
     def __iter__(self):
+        span = 2 * self.window_size + 1
+        buffer = deque(maxlen=span)
+        
+        centers = []
+        contexts = []
+        negatives = []
+        
+        for token in self.stream:
+            if token not in self.vocab.word2id:
+                continue
+            word_id = self.vocab.word2id[token]
+            
+            p_discard = self.vocab.discard_probs.get(word_id, 0.0)
+            if np.random.rand() < p_discard:
+                continue
+                
+            buffer.append(word_id)
+            
+            if len(buffer) < span:
+                continue
+                
+            center_word = buffer[self.window_size]
+            
+            dynamic_w = np.random.randint(1, self.window_size + 1)
+            
+            start_idx = self.window_size - dynamic_w
+            end_idx = self.window_size + dynamic_w + 1
+            
+            context_words = [buffer[i] for i in range(start_idx, end_idx) if i != self.window_size]
+            
+            for context_word in context_words:
+                centers.append(center_word)
+                contexts.append(context_word)
+                
+                neg_indices = np.random.randint(0, self.table_size, size=self.neg_samples)
+                negatives.append(self.unigram_table[neg_indices])
+                
+                if len(centers) == self.batch_size:
+                    yield (
+                        np.array(centers, dtype=np.int32), 
+                        np.array(contexts, dtype=np.int32), 
+                        np.array(negatives, dtype=np.int32)
+                    )
+                    centers, contexts, negatives = [], [], []
+
+        if len(centers) > 0:
+            yield (
+                np.array(centers, dtype=np.int32), 
+                np.array(contexts, dtype=np.int32), 
+                np.array(negatives, dtype=np.int32)
+            )
 
         span = 2 * self.window_size + 1
         buffer = deque(maxlen=span)

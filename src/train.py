@@ -71,12 +71,22 @@ def main():
     if not os.path.exists(corpus_path):
         print(f"Error: Dataset '{corpus_path}' not found. Run download_data.py first.")
         return
-    streamer = TextStreamer(corpus_path, limit_lines= 10000)
+    streamer = TextStreamer(corpus_path)
     
     vocab = Vocabulary(min_count=5) 
     
     print("Building vocabulary...")
     vocab.build_vocabulary(streamer)
+
+    print("\n--- Top 10 words most likely to be excluded ---")
+    sorted_words = sorted(vocab.word_counts.items(), key=lambda item: item[1], reverse=True)
+    
+    for word_id, count in sorted_words[:10]:
+        word = vocab.id2word[word_id]
+        p_discard = vocab.discard_probs.get(word_id, 0.0)
+        print(f"Token: '{word:<6}' | seen_count: {count:<7} | exclusion prob: {p_discard * 100:.1f}%")
+    print("-" * 50 + "\n")
+
     
     if len(vocab) == 0:
         print("Error: Vocabulary is empty. Corpus parsing failed.")

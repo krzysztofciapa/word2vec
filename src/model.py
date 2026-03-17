@@ -12,6 +12,18 @@ class Model:
         
         self.W_in = (np.random.rand(vocab_size, embedding_dim) - 0.5) / embedding_dim
         self.W_out = np.zeros((vocab_size, embedding_dim))
+        self.sig_max = 6.0
+        self.sig_table_size = 1000
+        self.sig_table = self._build_sigmoid_table()
+
+    def _build_sigmoid_table(self):
+        x = np.linspace(-self.sig_max, self.sig_max, self.sig_table_size)
+        return 1.0 / (1.0 + np.exp(-x))
+    
+    def fast_sigmoid(self, x):
+        idx = (x + self.sig_max) * (self.sig_table_size / (2.0 * self.sig_max))
+        idx = np.clip(idx, 0, self.sig_table_size - 1).astype(int)
+        return self.sig_table[idx]
 
     def forward_pass(self, centers, contexts, negatives):
 
@@ -21,11 +33,11 @@ class Model:
 
         #positive signal
         pos_dot = np.sum(v_c * v_ctx, axis=1)
-        pos_prob = sigmoid(pos_dot) 
+        pos_prob = self.fast_sigmoid(pos_dot) 
 
         #negative signal
         neg_dot = np.einsum('bd,bkd->bk', v_c, v_neg, optimize=True)
-        neg_prob = sigmoid(neg_dot)
+        neg_prob = self.fast_sigmoid(neg_dot)
 
         return v_c, v_ctx, v_neg, pos_prob, neg_prob
     
