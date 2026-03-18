@@ -64,18 +64,7 @@ class Model:
 
         return grad_W_in, grad_W_out_ctx, grad_W_out_neg
 
-    def update_weights(self, center_ids, context_ids, negative_ids, grad_W_in, grad_W_out_ctx, grad_W_out_neg, learning_rate):
-
-        np.add.at(self.W_in, center_ids, -learning_rate * grad_W_in)
-        np.add.at(self.W_out, context_ids, -learning_rate * grad_W_out_ctx)
-
-        
-        flat_neg_ids = negative_ids.flatten()
-        flat_grad_neg = grad_W_out_neg.reshape(-1, self.embedding_dim)
-        
-        np.add.at(self.W_out, flat_neg_ids, -learning_rate * flat_grad_neg)
-
-    def train_step(self, centers, contexts, negatives, learning_rate):
+    def train_step(self, centers, contexts, negatives, optimizer):
 
         v_c, v_ctx, v_neg, pos_prob, neg_prob = self.forward_pass(centers, contexts, negatives)
         
@@ -83,7 +72,7 @@ class Model:
         
         grad_in, grad_out_ctx, grad_out_neg = self.backward_pass(pos_prob, neg_prob, v_c, v_ctx, v_neg)
         
-        self.update_weights(centers, contexts, negatives, grad_in, grad_out_ctx, grad_out_neg, learning_rate)
+        optimizer.step(centers, contexts, negatives, grad_in, grad_out_ctx, grad_out_neg)
         
         return loss
     
