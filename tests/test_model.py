@@ -120,17 +120,11 @@ def test_np_add_at_correctness():
     assert np.any(np.abs(delta) > 1e-10), "No update applied"
     print("[PASS] test_np_add_at_correctness")
 
-
-# =========================================================
-#  SGLD-specific tests
-# =========================================================
-
 def test_sgld_reduces_loss():
-    """SGLD must reduce training loss (gradient step dominates noise)."""
     np.random.seed(10)
     vocab_size = 50
     model = Model(vocab_size=vocab_size, embedding_dim=16)
-    # burn_in_epochs=0 → noise from step 1 (worst case for convergence)
+    #burn in epochs = 0
     optimizer = SGLD(model, lr=0.1, temperature=1e-5,
                      burn_in_epochs=0, total_steps=200)
 
@@ -147,12 +141,11 @@ def test_sgld_reduces_loss():
 
 
 def test_sgld_noise_active():
-    """SGLD with noise must produce different embeddings than pure SGD."""
-    np.random.seed(11)
+
+    np.random.seed(67)
     vocab_size = 50
     embedding_dim = 16
 
-    # Identical init
     model_sgd = Model(vocab_size=vocab_size, embedding_dim=embedding_dim)
     model_sgld = Model(vocab_size=vocab_size, embedding_dim=embedding_dim)
     model_sgld.W_in = model_sgd.W_in.copy()
@@ -177,13 +170,12 @@ def test_sgld_noise_active():
 
 
 def test_sgld_snapshots():
-    """Snapshots must be collected after burn-in at the specified interval."""
     np.random.seed(12)
     vocab_size = 30
     model = Model(vocab_size=vocab_size, embedding_dim=8)
 
     total_steps = 50
-    # burn_in_epochs=1, so we must pass current_epoch=1 to trigger snapshots
+
     optimizer = SGLD(model, lr=0.05, total_steps=total_steps,
                      burn_in_epochs=1, snapshot_interval=5, max_snapshots=100,
                      temperature=1e-4, centroid_every=1)
@@ -208,7 +200,7 @@ def test_sgld_snapshots():
 
 
 def test_sgld_centroid():
-    """Centroid (running mean) must be populated and differ from raw W_in."""
+
     np.random.seed(13)
     vocab_size = 30
     model = Model(vocab_size=vocab_size, embedding_dim=8)
@@ -228,7 +220,7 @@ def test_sgld_centroid():
     assert centroid is not None, "Centroid not populated"
     assert centroid.shape == model.W_in.shape, \
         f"Centroid shape wrong: {centroid.shape}"
-    # Centroid is the running mean → it should differ from the last W_in
+
     diff = np.linalg.norm(centroid - model.W_in)
     assert diff > 1e-6, f"Centroid equals raw W_in (diff={diff:.2e})"
     print(f"  Centroid samples: {optimizer.centroid_count}, divergence from W_in: {diff:.4f}")
