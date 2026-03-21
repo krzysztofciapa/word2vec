@@ -1,9 +1,5 @@
 # Word2Vec: Skip-Gram with SGLD in NumPy
 
-![Python]
-![NumPy]
-![Optimization]
-
 ## Overview
 This repository contains a full implementation of the **Word2Vec (Skip-Gram with Negative Sampling)** training loop written from scratch in **NumPy** (no PyTorch, TensorFlow, or other ML frameworks). 
 
