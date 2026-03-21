@@ -59,7 +59,7 @@ $$
 This specific heuristic artificially boosts the probability of drawing rare words as negative samples, ensuring the model doesn't over-optimize against frequent terms exclusively. Moreover, we are aware that there is a possibility of drawing a word that is semantically close to the center word as a negative sample, but the damage of such an event is negligible.
 
 ### Dynamic Window Size
-To give appropriately higher weight to context words that are physically closer to the center word in the sentence, we implement a dynamic window strategy. Instead of always using a fixed `window_size`, for each center word during training, the effective window size is sampled uniformly from $[1, \text{window\_size}]$. This acts as a weighting mechanism, naturally ensuring that immediate neighbors are trained more frequently than distant ones.
+To give appropriately higher weight to context words that are physically closer to the center word in the sentence, we implement a dynamic window strategy. Instead of always using a fixed `window_size`, for each center word during training, the effective window size is sampled uniformly from `[1, window_size]`. This acts as a weighting mechanism, naturally ensuring that immediate neighbors are trained more frequently than distant ones.
 
 ## 3. Mathematical Gradient Derivations
 
