@@ -31,8 +31,7 @@ $$
 $$
 
 ### Weight Initialization
-Unlike the original Word2Vec C-code which uses a very narrow uniform initialization ($[-0.5/d, 0.5/d]$), we initialize the center word embeddings ($W_{in}$) using **Xavier Normal** initialization ($V \sim \mathcal{N}(0, 1/\sqrt{d})$). The context and negative embeddings ($W_{out}$) begin as zeros. This approach provides a mathematically sound variance scale, significantly improving the initial stability of gradients and convergence.
-
+We initialize the center word embeddings `W_{in}` using **Xavier Normal** initialization `V ~ N(0, 1/√d)`. The context and negative embeddings `W_{out}` begin as zeros. 
 ## 2. Data Processing
 
 ### Subsampling of Frequent Words
@@ -132,9 +131,13 @@ To move beyond vectors, we adopt **Stochastic Gradient Langevin Dynamics (SGLD)*
 This method borrows its name from physics, where it describes the random, chaotic movement of particles in a fluid (similar to dust floating in the air). In our model, instead of dust, it's the word vectors that are being randomly "moved around" as they learn.
 Unlike SGD which seeks the strict ground floor of a loss valley, SGLD continuously injects controlled, normally distributed noise into the update steps. 
 
-In standard machine learning, algorithms look for a single, "perfect" set of weights (a point estimate). However, in Bayesian statistics, we don't believe in a single answer. Instead, we seek the **posterior distribution**—a complete probability landscape showing all the highly likely positions for a word *after* observing the training data.
+The mathematical update rule for the weights in SGLD is defined as:
+$$
+\theta_{t+1} = \theta_t - \varepsilon_t \nabla \mathcal{L}(\theta_t) + \eta_t \quad \text{where} \quad \eta_t \sim \mathcal{N}(0, 2\varepsilon_t\tau)
+$$
+Where $\varepsilon_t$ is the decaying learning rate and $\tau$ is the system temperature determining the scale of injected noise.
 
-Because SGLD constantly injects noise, our word vectors never fully stop moving; they wander around the optimal valleys forever. The mathematical brilliance of Langevin Dynamics is that the amount of time a vector spends wandering in any specific region is flawlessly proportional to that region's true posterior probability. By periodically "taking a photo" of the word vectors during this wandering phase, we collect **posterior samples**. When overlaid, these snapshots form a thick "probability cloud" that reveals the full scale of a word's ambiguity, rather than just a single rigid point.
+Because SGLD constantly injects noise, our word vectors never fully stop moving; they wander around the optimal valleys forever. The brilliance of Langevin Dynamics is that the amount of time a vector spends wandering in any specific region is proportional to that region's true posterior probability. By periodically taking a snapshot of the word vectors during this wandering phase, we collect **posterior samples**. When overlaid, these snapshots form a thick "probability cloud" that reveals the full scale of a word's ambiguity, rather than just a single rigid point.
 
 While AdaGrad handles *frequency*, SGLD captures *semantic consistency*:
 Instinctively, we can think of gradients as a steepness of a hill. The steeper the hill, the less noise will change the position of our word on the plane.
