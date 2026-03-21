@@ -16,6 +16,7 @@ class TextStreamer:
                 tokens = re.findall(r'[a-z]+', line.lower())
                 for token in tokens:
                     yield token
+
 class Vocabulary:
     def __init__(self, min_count=5, subsampling_t=1e-5):
         self.min_count = min_count
@@ -45,7 +46,8 @@ class Vocabulary:
     def _calculate_discard_probabilities(self):
         for word_id, count in self.word_counts.items():
             frequency = count / self.total_words
-            p_discard = max(0.0, 1.0 - np.sqrt(self.subsampling_t / frequency))
+            p_keep = (np.sqrt(frequency / self.subsampling_t) + 1.0) * (self.subsampling_t / frequency)
+            p_discard = max(0.0, 1.0 - p_keep)
             self.discard_probs[word_id] = p_discard
 
     def __len__(self):
