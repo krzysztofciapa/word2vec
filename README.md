@@ -132,10 +132,14 @@ This method borrows its name from physics, where it describes the random, chaoti
 Unlike SGD which seeks the strict ground floor of a loss valley, SGLD continuously injects controlled, normally distributed noise into the update steps. 
 
 The mathematical update rule for the weights in SGLD is defined as:
+
 $$
 \theta_{t+1} = \theta_t - \varepsilon_t \nabla \mathcal{L}(\theta_t) + \eta_t \quad \text{where} \quad \eta_t \sim \mathcal{N}(0, 2\varepsilon_t\tau)
 $$
+
 Where $\varepsilon_t$ is the decaying learning rate and $\tau$ is the system temperature determining the scale of injected noise.
+
+It may look complicated, so to explain: learning rate is the size of the step we take in the opposite direction of the gradient (it is decaying just as in SGD), and then we add normally-distributed noise. The history of these positions will form the true posterior distribution.
 
 Because SGLD constantly injects noise, our word vectors never fully stop moving; they wander around the optimal valleys forever. The brilliance of Langevin Dynamics is that the amount of time a vector spends wandering in any specific region is proportional to that region's true posterior probability. By periodically taking a snapshot of the word vectors during this wandering phase, we collect **posterior samples**. When overlaid, these snapshots form a thick "probability cloud" that reveals the full scale of a word's ambiguity, rather than just a single rigid point.
 
