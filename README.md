@@ -6,8 +6,8 @@ This repository contains a full implementation of the **Word2Vec (Skip-Gram with
 This project extends the standard architecture by utilizing a variation of **Bayesian Word Embeddings** via **Stochastic Gradient Langevin Dynamics (SGLD)**.
 
 The primary goals of this project are:
-1. **Mathematical Rigor**: Deriving and implementing the objective functions, probability distributions, and gradients manually.
-2. **Deep Optimization Insights**: Exploring how different optimizers (SGD, AdaGrad, and SGLD) handle the extreme variance in natural language frequency (Zipf's law) and the geometric topography of word representations.
+1. **Mathematical Understanding**: Deriving and implementing the objective functions, probability distributions, and gradients manually.
+2. **Deep Optimization**: Exploring how different optimizers (SGD, AdaGrad, and SGLD) handle the extreme variance in natural language frequency (Zipf's law) and the geometric topography of word representations.
 3. **Semantic Uncertainty**: Using Langevin Dynamics to sample from the posterior distribution, capturing not just a *point estimate* of a word's meaning, but the scale of its semantic ambiguity (flat vs. steep minima).
 
 ## 1. Skip-Gram Architecture and Negative Sampling
